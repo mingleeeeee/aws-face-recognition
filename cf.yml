@@ -1,0 +1,334 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Set up lab
+
+Parameters:
+    ScriptBucketName: 
+      Type: String
+      Description: Enter the bucket name.
+      AllowedPattern: ^[a-z0-9.-]+$
+
+    FaceRecognitionLambdaScript:
+      Type: String
+      Description: Enter the script for FaceRecognition lambda.
+      Default: lambda_script/FaceRecognition.zip
+
+    ReadDBLambdaScript:
+      Type: String
+      Description: Enter the script for Read DB lambda.
+      Default: lambda_script/ReadDB.zip
+      
+    FaceBucketName: 
+      Type: String
+      Description: Create a bucket with a unique name.
+      AllowedPattern: ^[a-z0-9.-]+$
+      ConstraintDescription: Malformed input-Parameter S3DataRepositoryBucketName must be unique and only contain lowercase letters and numbers
+
+    FaceRecognitionLambdaName:
+      Type: String
+      Description: Enter your lambda name here.
+      Default: "Lab-FaceRecognition"
+    
+    FirehoseStreamLambdaName:
+      Type: String
+      Description: Enter your lambda name here.
+      Default: "Lab-FirehoseTransform"
+
+    ReadDBLambdaName:
+      Type: String
+      Description: Enter your lambda name here.
+      Default: "Lab-ReadDB"
+
+    FaceIndexTable:
+      Description: 'Enter the name for face index table.'
+      Type: String
+      Default: face_index
+
+    FaceRecordTable:
+      Description: 'Enter the name for face record table.'
+      Type: String
+      Default: face_record
+
+    FaceRecognitionRoleName:
+      Description: 'Enter the role name for document index.'
+      Type: String
+      Default: Lab-FaceRecognition
+
+    FirehoseStreamName:
+      Description: 'Enter the name for firehose stream.'
+      Type: String
+      Default: Lab-FirehoseStream
+
+    IoTRuleName:
+      Description: 'Enter the name for IoT rule.'
+      Type: String
+      Default: Lab-putFirehose
+
+    ApiGatewayName:
+      Description: 'Enter the name for api gateway.'
+      Type: String
+      Default: Lab-API
+
+
+Metadata: 
+  AWS::CloudFormation::Interface: 
+    ParameterGroups: 
+      - Label: 
+          default: "S3 Bucket Configuration"
+        Parameters: 
+          - ScriptBucketName
+          - FaceBucketName
+      - Label: 
+          default: "IAM Configuration"
+        Parameters: 
+          - FaceRecognitionRole
+          - FirehoseStreamRole
+      - Label: 
+          default: "Lambda Configuration - Face Recognition"
+        Parameters: 
+          - FaceRecognitionLambdaName
+          - FaceRecognitionLambdaScript
+      - Label: 
+          default: "Lambda Configuration - FirehoseTransform"
+        Parameters: 
+          - FirehoseStreamLambdaName
+          - FirehoseStreamLambdaScript
+      - Label:
+          default: "DynamoDB Configuration"
+        Parameters: 
+          - FaceIndexTable
+          - FaceRecordTable
+      - Label:
+          default: "IoT Configuration"
+        Parameters: 
+          - IoTRuleName
+      - Label:
+          default: "API Gateway Configuration"
+        Parameters: 
+          - ApiGatewayName
+      - Label:
+          default: "Rekognition Configuration"
+        Parameters: 
+          - RekognitionCollectionName
+
+Resources:
+    ## IAM Role
+    FaceRecognitionRole: 
+      Type: AWS::IAM::Role
+      Properties:
+        Path: "/"
+        ManagedPolicyArns: 
+          - 'arn:aws:iam::aws:policy/AmazonS3FullAccess'
+          - 'arn:aws:iam::aws:policy/AmazonDynamoDBFullAccess'
+          - 'arn:aws:iam::aws:policy/AmazonRekognitionFullAccess'
+          - 'arn:aws:iam::aws:policy/CloudWatchLogsFullAccess'
+          - 'arn:aws:iam::aws:policy/AWSBatchFullAccess'
+          - 'arn:aws:iam::aws:policy/AmazonKinesisFirehoseFullAccess'
+        AssumeRolePolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+          - 
+            Action: sts:AssumeRole  
+            Effect: Allow
+            Principal:
+              Service:
+                - "lambda.amazonaws.com"
+        RoleName: !Ref FaceRecognitionRoleName
+
+    FirehoseDeliveryRole: 
+      Type: AWS::IAM::Role
+      Properties:
+        Path: "/"
+        ManagedPolicyArns: 
+          - 'arn:aws:iam::aws:policy/AmazonS3FullAccess'
+          - 'arn:aws:iam::aws:policy/CloudWatchLogsFullAccess'
+          - 'arn:aws:iam::aws:policy/AWSLambdaFullAccess'
+          - 'arn:aws:iam::aws:policy/AmazonKinesisFullAccess'
+        AssumeRolePolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+          - 
+            Action: sts:AssumeRole  
+            Effect: Allow
+            Principal:
+              Service:
+                - "lambda.amazonaws.com"
+        RoleName: !Ref FaceRecognitionRoleName
+      
+    ## lambda
+    FaceRecognitionLambda:
+      Type: AWS::Lambda::Function
+      Properties:
+        FunctionName: !Ref FaceRecognitionLambdaName
+        Code:
+          # Choose your script in a specific S3 bucket.
+          S3Bucket: !Ref ScriptBucketName
+          S3Key: !Ref FaceRecognitionLambdaScript
+        Handler: lambda_function.lambda_handler
+        Role: !GetAtt FaceRecognitionRole.Arn
+        Runtime: python3.7
+        Description: Create Doc index handler for elasticsearch 
+        Timeout: 300 
+        Environment:
+          Variables:
+            BUCKET: !Ref FaceBucketName
+            COLLECTION: !Ref RekognitionCollectionName
+            FACE_TABLE: !Ref FaceIndexTable
+            STREAM_RECORD: !Ref FaceRecordTable
+
+    FirehoseStreamLambda:
+      Type: AWS::Lambda::Function
+      Properties:
+        FunctionName: !Ref FirehoseStreamLambdaName
+        Code:
+          # Choose your script in a specific S3 bucket.
+          S3Bucket: !Ref ScriptBucketName
+          S3Key: !Ref FirehoseStreamLambdaScript
+        Handler: lambda_function.lambda_handler
+        Role: !GetAtt FaceRecognitionRole.Arn
+        Runtime: python3.7
+        Timeout: 300 
+
+    ReadDBLambda:
+      Type: AWS::Lambda::Function
+      Properties:
+        FunctionName: !Ref ReadDBLambdaName
+        Code:
+          # Choose your script in a specific S3 bucket.
+          S3Bucket: !Ref ScriptBucketName
+          S3Key: !Ref ReadDBLambdaScript
+        Handler: lambda_function.lambda_handler
+        Role: !GetAtt FaceRecognitionRole.Arn
+        Runtime: python3.7
+        Timeout: 300   
+
+    ## Create bucket for index data storage & set up event trigger
+    FaceDataBucket:
+      Type: AWS::S3::Bucket
+      Properties:
+        BucketName: !Ref FaceBucketName
+        NotificationConfiguration:
+          LambdaConfigurations:
+          - Event: 's3:ObjectCreated:Put'
+            Function: !GetAtt FaceRecognitionLambda.Arn
+
+    ## S3 trigger Lambda-indexDoc
+    SetPermissionBucket1:
+      Type: AWS::Lambda::Permission
+      Properties:
+        Action: 'lambda:InvokeFunction'
+        FunctionName: !Ref FaceRecognitionLambda
+        Principal: s3.amazonaws.com
+        SourceAccount: !Ref "AWS::AccountId"
+        SourceArn: !Sub "arn:aws:s3:::${DataBucketName}"
+
+    FirehoseStream:
+      Type: AWS::KinesisFirehose::DeliveryStream
+      Properties: 
+        DeliveryStreamName: !Ref FirehoseStreamName
+        DeliveryStreamType: DirectPut
+        ExtendedS3DestinationConfiguration: 
+          BucketARN: !GetAtt FaceDataBucket.Arn
+          BufferingHints: 60
+          CloudWatchLoggingOptions: 
+            Enabled: True
+            LogGroupName: /aws/lambda/firehose
+            #LogStreamName: String
+          ErrorOutputPrefix: Error
+          Prefix: Data
+          ProcessingConfiguration:
+            Enabled: True
+            Processors:
+              - Type: Lambda
+                Parameters:
+                  - ParameterName: FirehoseStreamTransform
+                    ParameterValue:
+                      Fn::GetAtt: [FirehoseStreamLambda, Arn ]
+                  - ParameterName: BufferSizeInMBs
+                    ParameterValue: 3
+                  - ParameterName: BufferIntervalInSeconds
+                    ParameterValue: 60
+          RoleARN: String
+
+    IotRule:
+      Type: AWS::IoT::TopicRule
+      Properties: 
+        RuleName: !Ref IoTRuleName
+        TopicRulePayload: 
+          Sql: Select * from 'face/image'
+        Actions:
+          - Firehose: 
+              DeliveryStreamName: !Ref FirehoseStreamName
+              RoleArn: !GetAtt FirehoseStreamRole
+
+    # DynamoDB
+    FaceIndexTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: !Ref FaceIndexTable
+        AttributeDefinitions:
+          - AttributeName: "face_id"
+            AttributeType: "S"
+        KeySchema:
+          - AttributeName: "face_id"
+            KeyType: "HASH"
+        ProvisionedThroughput:
+          ReadCapacityUnits: 1
+          WriteCapacityUnits: 1
+
+    FaceRecordTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: !Ref FaceRecordTable
+        AttributeDefinitions:
+          - AttributeName: "id"
+            AttributeType: "S"
+        KeySchema:
+          - AttributeName: "id"
+            KeyType: "HASH"
+        ProvisionedThroughput:
+          ReadCapacityUnits: 1
+          WriteCapacityUnits: 1
+
+
+     ## API Gateway
+    ApiGateway:
+      Type: "AWS::ApiGateway::RestApi"
+      Properties:
+        Name: !Ref ApiGatewayName
+
+    ApiGatewayResource:
+      Type: AWS::ApiGateway::Resource
+      Properties: 
+        ParentId: !GetAtt "apiGateway.RootResourceId"
+        PathPart: "lab"
+        RestApiId: !Ref ApiGateway
+
+    ApiGatewayRootMethod:
+      Type: "AWS::ApiGateway::Method"
+      Properties:
+        AuthorizationType: "NONE"
+        #HttpMethod: "POST"
+        Integration:
+          IntegrationHttpMethod: "Get"
+          Type: "AWS_PROXY"
+          Uri: !Sub
+            - "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${lambdaArn}/invocations"
+            - lambdaArn: !GetAtt "ReadDBLambda.Arn"
+        ResourceId: !Ref ApiGatewayResource
+        RestApiId: !Ref "ApiGateway"
+
+    ApiGatewayStage:
+      Type: AWS::ApiGateway::Stage
+      Properties:
+        StageName: "lab"
+        Description: 'lab env'
+        RestApiId: !Ref "ApiGateway"
+        DeploymentId: !Ref ApiGatewayDeployment
+
+    ApiGatewayDeployment:
+      Type: "AWS::ApiGateway::Deployment"
+      DependsOn:
+        - "apiGatewayRootMethod"
+      Properties:
+        RestApiId: !Ref "ApiGateway" 
