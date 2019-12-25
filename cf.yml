@@ -228,7 +228,10 @@ Resources:
         Handler: lambda_function.lambda_handler
         Role: !GetAtt FaceRecognitionRole.Arn
         Runtime: python3.7
-        Timeout: 300 
+        Timeout: 300
+        Environment:
+          Variables:
+            BUCKET: !Ref FaceBucketName
 
     ReadDBLambda:
       Type: AWS::Lambda::Function
