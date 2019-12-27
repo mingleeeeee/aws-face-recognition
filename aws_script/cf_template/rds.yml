@@ -1,0 +1,183 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Set up lab
+
+Parameters:
+    # lambda script
+    ScriptBucketName: 
+      Type: String
+      Description: Enter the bucket name.
+      AllowedPattern: ^[a-z0-9.-]+$
+      Default: ming-lab-face-recognition
+    FaceRecognitionLambdaScript:
+      Type: String
+      Description: Enter the script for FaceRecognition lambda.
+      Default: lambda_script/FaceRecognition.zip
+    ReadDBLambdaScript:
+      Type: String
+      Description: Enter the script for Read DB lambda.
+      Default: lambda_script/ReadDB.zip
+    FirehoseStreamLambdaScript:
+      Type: String
+      Description: Enter the script for Read DB lambda.
+      Default: lambda_script/Firehose.zip
+    # create S3 bucket
+    FaceBucketName: 
+      Type: String
+      Description: Create a bucket with a unique name.
+      AllowedPattern: ^[a-z0-9.-]+$
+      ConstraintDescription: Malformed input-Parameter S3DataRepositoryBucketName must be unique and only contain lowercase letters and numbers
+      Default: lab-face-collection
+    # create lambda
+    FaceRecognitionLambdaName:
+      Type: String
+      Description: Enter your lambda name here.
+      Default: "Lab-FaceRecognition"
+    FirehoseStreamLambdaName:
+      Type: String
+      Description: Enter your lambda name here.
+      Default: "Lab-FirehoseTransform"
+    ReadDBLambdaName:
+      Type: String
+      Description: Enter your lambda name here.
+      Default: "Lab-ReadDB"
+    # create dynamodb
+    FaceIndexTableName:
+      Description: 'Enter the name for face index table.'
+      Type: String
+      Default: lab_face_index
+    FaceRecordTableName:
+      Description: 'Enter the name for face record table.'
+      Type: String
+      Default: lab_face_record
+    # create IAM role
+    FaceRecognitionRoleName:
+      Description: 'Enter the role name for lambda.'
+      Type: String
+      Default: Lab-FaceRecognition-role
+    FirehoseStreamRoleName:
+      Description: 'Enter the role for firehose delivery stream.'
+      Type: String
+      Default: Lab-firehose-role
+    IoTRuleRoleName:
+      Description: 'Enter the role for iot rule.'
+      Type: String
+      Default: Lab-iot-rule-firehose
+    # create firehose stream
+    FirehoseStreamName:
+      Description: 'Enter the name for firehose stream.'
+      Type: String
+      Default: Lab-FirehoseStream
+    # create iot rule
+    IoTRuleName:
+      Description: 'Enter the name for IoT rule.'
+      Type: String
+      Default: LabSendFirehose
+    RekognitionCollectionName:
+      Description: 'Enter the name for rekognition collection.'
+      Type: String
+      Default: Lab-face-collection
+    # create api gateway
+    ApiGatewayName:
+      Description: 'Enter the name for api gateway.'
+      Type: String
+      Default: Lab-API
+
+Metadata: 
+  AWS::CloudFormation::Interface: 
+    ParameterGroups: 
+      - Label: 
+          default: "S3 Bucket Configuration"
+        Parameters: 
+          - ScriptBucketName
+          - FaceBucketName
+      - Label: 
+          default: "IAM Role Configuration"
+        Parameters: 
+          - FaceRecognitionRoleName
+          - FirehoseStreamRoleName
+          - IoTRuleRoleName
+      - Label: 
+          default: "Lambda Configuration - Face Recognition"
+        Parameters: 
+          - FaceRecognitionLambdaName
+          - FaceRecognitionLambdaScript
+      - Label: 
+          default: "Lambda Configuration - FirehoseTransform"
+        Parameters: 
+          - FirehoseStreamLambdaName
+          - FirehoseStreamLambdaScript
+      - Label: 
+          default: "Lambda Configuration - ReadDB"
+        Parameters: 
+          - ReadDBLambdaName
+          - ReadDBLambdaScript
+      - Label:
+          default: "DynamoDB Configuration"
+        Parameters: 
+          - FaceIndexTableName
+          - FaceRecordTableName
+      - Label:
+          default: "IoT Configuration"
+        Parameters: 
+          - IoTRuleName
+      - Label:
+          default: "Firehose Configuration"
+        Parameters: 
+          - FirehoseStreamName
+          - FirehoseStreamRoleName
+      - Label:
+          default: "Rekognition Configuration"
+        Parameters: 
+          - RekognitionCollectionName
+      - Label:
+          default: "API Gateway Configuration"
+        Parameters: 
+          - ApiGatewayName
+      
+
+Resources:
+    ## IAM Role
+    FaceRecognitionRole: 
+      Type: AWS::IAM::Role
+      Properties:
+        Path: "/"
+        ManagedPolicyArns: 
+          - 'arn:aws:iam::aws:policy/AmazonS3FullAccess'
+          - 'arn:aws:iam::aws:policy/AmazonDynamoDBFullAccess'
+          - 'arn:aws:iam::aws:policy/AmazonRekognitionFullAccess'
+          - 'arn:aws:iam::aws:policy/CloudWatchLogsFullAccess'
+          - 'arn:aws:iam::aws:policy/AWSBatchFullAccess'
+          - 'arn:aws:iam::aws:policy/AmazonKinesisFirehoseFullAccess'
+        AssumeRolePolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+          - 
+            Action: sts:AssumeRole  
+            Effect: Allow
+            Principal:
+              Service:
+                - "lambda.amazonaws.com"
+        RoleName: !Ref FaceRecognitionRoleName
+
+    FirehoseStreamRole: 
+      Type: AWS::IAM::Role
+      Properties:
+        Path: "/"
+        ManagedPolicyArns: 
+          - 'arn:aws:iam::aws:policy/AmazonS3FullAccess'
+          - 'arn:aws:iam::aws:policy/CloudWatchLogsFullAccess'
+          - 'arn:aws:iam::aws:policy/AWSLambdaFullAccess'
+          - 'arn:aws:iam::aws:policy/AmazonKinesisFullAccess'
+        AssumeRolePolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+          - 
+            Action: sts:AssumeRole  
+            Effect: Allow
+            Principal:
+              Service:
+                - "firehose.amazonaws.com"
+        RoleName: !Ref FirehoseStreamRoleName
+      
+    
