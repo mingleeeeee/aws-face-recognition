@@ -29,9 +29,9 @@ pip install -r requirement.txt
 
 - ML Application
     - AWS Rekognition
-    
+
 <img src="images/arch.png" alt="architecture"
-	 width="50%" height="50%" />
+	 width="70%" height="70%" />
 
 
 ## Build
