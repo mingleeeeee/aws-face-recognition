@@ -41,12 +41,12 @@ pip install -r requirement.txt
 ```
 aws configure
 ```
-- Cloudformation template
-    - This will build whole architecture of AWS resources
-```
-cd aws_script/cf_template 
-./deploy.sh
-```
+- Cloudformation template (This will build whole architecture of AWS resources)
+    - Open AWS console
+    - Go to `Cloudformation`
+    - Click `Create stack`
+    - Click `Upload`
+    - Select `cf.yaml` in `/aws_script/cf_template`
 
 - Face detection app (Requires local computer/laptap with webcam)
     - This will start a face detection app
