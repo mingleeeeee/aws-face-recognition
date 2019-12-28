@@ -73,6 +73,11 @@ Parameters:
       Description: 'Enter the name for IoT rule.'
       Type: String
       Default: LabSendFirehose
+    SQLcommand:
+      Description: 'Enter SQL command for IoT rule. IoT rule will subscribe the following topic name.'
+      Type: String
+      Default: Select * from 'face/image'
+    # create rekognition collection 
     RekognitionCollectionName:
       Description: 'Enter the name for rekognition collection.'
       Type: String
@@ -300,7 +305,7 @@ Resources:
       Properties: 
         RuleName: !Ref IoTRuleName
         TopicRulePayload: 
-          Sql: Select * from 'face/image' # subscribe to topic face/image
+          Sql:  !Ref SQLcommand  # subscribe to topic 
           RuleDisabled: false
           Actions:
             - Firehose: 

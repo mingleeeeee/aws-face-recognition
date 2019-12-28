@@ -9,6 +9,7 @@ This workshop requires the following:
     - python-opencv
     - dlib
     - boto3
+    - awscli
 
 ``` 
 pip install -r requirement.txt 
@@ -35,4 +36,30 @@ pip install -r requirement.txt
 
 
 ## Build
+- AWS Credential Configure
+    - Enter access id, secret access key, default region name, default output format
+```
+aws configure
+```
 - Cloudformation template
+    - This will build whole architecture of AWS resources
+```
+cd aws_script/cf_template 
+./deploy.sh
+```
+
+- Face detection app (Requires local computer/laptap with webcam)
+    - This will start a face detection app
+    - Detected faces will be saved as jpg and send to AWS IoT Topic
+    - Default IoT Topic name is `face/image`. You can change it, but note that `IoT Rule` need to subscribe to this topic.
+```
+cd script
+python face-detection.py
+```
+- ReactJS app
+    - Build app
+    - Cognito
+    - API Gateway
+```
+react
+```

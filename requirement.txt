@@ -2,3 +2,4 @@ opencv-python
 dlib
 imutils
 boto3
+awscli
