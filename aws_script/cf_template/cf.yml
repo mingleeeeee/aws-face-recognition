@@ -63,6 +63,14 @@ Parameters:
       Description: 'Enter the role for iot rule.'
       Type: String
       Default: Lab-iot-rule-firehose
+    GlueRoleName:
+      Description: 'Enter the role for glue.'
+      Type: String
+      Default: Lab-glue-role
+    ECSRoleName:
+      Description: 'Enter the role for ecs (AWS batch).'
+      Type: String
+      Default: Lab-ecs-batch-role
     # create firehose stream
     FirehoseStreamName:
       Description: 'Enter the name for firehose stream.'
@@ -102,6 +110,8 @@ Metadata:
           - FaceRecognitionRoleName
           - FirehoseStreamRoleName
           - IoTRuleRoleName
+          - GlueRoleName
+          - ECSRoleName
       - Label: 
           default: "Lambda Configuration - Face Recognition"
         Parameters: 
@@ -201,6 +211,44 @@ Resources:
               Service:
                 - "iot.amazonaws.com"
         RoleName: !Ref IoTRuleRoleName
+
+    GlueRole: 
+      Type: AWS::IAM::Role
+      Properties:
+        Path: "/"
+        ManagedPolicyArns: 
+          - 'arn:aws:iam::aws:policy/AmazonRDSFullAccess'
+          - 'arn:aws:iam::aws:policy/AmazonS3FullAccess'
+          - 'arn:aws:iam::aws:policy/service-role/AWSGlueServiceRole'
+        AssumeRolePolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+          - 
+            Action: sts:AssumeRole  
+            Effect: Allow
+            Principal:
+              Service:
+                - "glue.amazonaws.com"
+        RoleName: !Ref GlueRoleName
+
+    ECSRole: 
+      Type: AWS::IAM::Role
+      Properties:
+        Path: "/"
+        ManagedPolicyArns: 
+          - 'arn:aws:iam::aws:policy/AmazonS3FullAccess'
+          - 'arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryFullAccess'
+          - 'arn:aws:iam::aws:policy/AWSBatchFullAccess'
+        AssumeRolePolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+          - 
+            Action: sts:AssumeRole  
+            Effect: Allow
+            Principal:
+              Service:
+                - "ecs-tasks.amazonaws.com"
+        RoleName: !Ref ECSRoleName
       
     ## lambda
     FaceRecognitionLambda:
@@ -351,6 +399,7 @@ Resources:
         ParentId: !GetAtt ApiGateway.RootResourceId
         PathPart: "lab"
         RestApiId: !Ref ApiGateway
+
     ApiGatewayRootMethod:
       Type: "AWS::ApiGateway::Method"
       Properties:
@@ -364,6 +413,7 @@ Resources:
             - lambdaArn: !GetAtt ReadDBLambda.Arn
         ResourceId: !Ref ApiGatewayResource
         RestApiId: !Ref "ApiGateway"
+
     ApiGatewayStage:
       Type: AWS::ApiGateway::Stage
       Properties:
