@@ -6,9 +6,8 @@ Parameters:
     # lambda script
     ScriptBucketName: 
       Type: String
-      Description: Enter the bucket name.
+      Description: Enter the bucket name for lambda script.
       AllowedPattern: ^[a-z0-9.-]+$
-      Default: ming-lab-face-recognition
     FaceRecognitionLambdaScript:
       Type: String
       Description: Enter the script for FaceRecognition lambda.
@@ -27,7 +26,6 @@ Parameters:
       Description: Create a bucket with a unique name.
       AllowedPattern: ^[a-z0-9.-]+$
       ConstraintDescription: Malformed input-Parameter S3DataRepositoryBucketName must be unique and only contain lowercase letters and numbers
-      Default: lab-face-collection
     # create lambda
     FaceRecognitionLambdaName:
       Type: String

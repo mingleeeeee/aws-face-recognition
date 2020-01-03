@@ -47,10 +47,18 @@ aws configure
 ```
 - Cloudformation template (This will build AWS resources)
     - Open AWS console
+    - Go to **S3**
+        - Click create bucket
+        - Enter a **unique** bucket name
+        - Click **create**
+        - Upload **lambda_script** folder to S3 in **aws_script**
+        <img src="images/s3.png" alt="architecture"
+	 width="70%" height="70%" />
+
     - Go to **Cloudformation**
-    - Click **Create stack**
-    - Click **Upload**
-    - Select `cf.yaml` in **/aws_script/cf_template**
+        - Click **Create stack**
+        - Click **Upload**
+        - Select `cf.yaml` in **/aws_script/cf_template**
 
 - AWS Console setting
     - API Gateway CORS setting
@@ -124,7 +132,7 @@ python face-detection.py
         - For **This job runs**, select **A new script to be authored by you**
         - For **Script file name**, enter `batch-job`
         - Click **Save job and edit script**
-        - Paste the code
+        - Paste and edit the code
 
         ```
         import boto3
@@ -142,10 +150,13 @@ python face-detection.py
 
         glueContext = GlueContext(SparkContext.getOrCreate())
         s3 = boto3.client('s3')
+
+        ## edit here ##
         BUCKET = "Your bucket name"
         HOST = 'Your database Endpoint'
         PASSWD = 'YourPassword'
-        DB = 'face-db' 
+        DB = 'face-db'
+        ###############
 
         conn = pymysql.connect (host = HOST,
                                 user = 'admin',
