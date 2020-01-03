@@ -10,10 +10,14 @@ This workshop requires the following:
     - dlib
     - boto3
     - awscli
+    ``` 
+    pip install -r requirement.txt 
+    ```
+- [Docker](https://hub.docker.com/?overlay=onboarding)
+- npm
+- node.js
 
-``` 
-pip install -r requirement.txt 
-```
+
 
 ## Overview
 - Data Ingestion
@@ -68,11 +72,34 @@ python face-detection.py
 ```
 - ReactJS app
     - Build app
-    - Cognito
-    - API Gateway
-```
-react
-```
+        - [Documentation please Refer to here](https://aws-amplify.github.io/docs/js/start)
+        - Basic installation
+        ```
+        npx create-react-app webapp
+        cd webapp
+        npm install @aws-amplify/api @aws-amplify/pubsub
+        npm install aws-amplify-react
+        # Setup backend
+        amplify init
+        amplify status
+        amplify push
+        ```
+        - Copy files in **react_script** folder to **webapp**
+            - package.json
+            - public
+            - src
+        - Edit `App.js` in **webapp/src**
+            - paste your api gateway endpoint on it
+        <img src="images/appjs.png" alt="architecture"
+	 width="70%" height="70%" />
+        - run npm install
+        ```
+        npm install
+        ```
+        - run webapp server
+        ```
+        npm start
+        ```
 
 ## Build batch processing flow
 - RDS setup
