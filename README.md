@@ -17,6 +17,8 @@ This workshop requires the following:
 - node.js
 
 ## Overview
+- AWS architecture
+
 <img src="images/arch.png" alt="architecture"
 	 width="70%" height="70%" />
 
@@ -25,11 +27,15 @@ This workshop requires the following:
     <img src="images/ming.png" alt="architecture"
 	 width="50%" height="50%" />
 
-- Recognition result
+- Recognition result on **AWS IoT**
    
     <img src="images/iot-result.png" alt="architecture"
-	 width="80%" height="80%" />
+	 width="100%" height="100%" />
 
+- Recognition result on a react website
+
+    <img src="images/react.png" alt="architecture"
+	 width="100%" height="100%" />
 
 ## Build a face recognition app
 - AWS Credential Configure
@@ -70,15 +76,9 @@ python face-detection.py
 ## Build a reactJS app to read record
 - [Documentation please Refer to here](https://aws-amplify.github.io/docs/js/start)
 - Basic installation
+    - Most of the steps just need to keep clicking `Enter`
 ```
-npx create-react-app webapp
-cd webapp
-npm install @aws-amplify/api @aws-amplify/pubsub
-npm install aws-amplify-react
-# Setup backend
-amplify init
-amplify status
-amplify push
+./build_react.sh
 ```
 - Copy files in **react_script** folder to **webapp** and replace them all
     - package.json
@@ -100,16 +100,7 @@ width="70%" height="70%" />
 ```
 npm install
 ```
-- Enable CORS in **API Gateway**
-    - Go to **API Gatway** console
-    - Select `Lab-API`
-    - Click **Resources** on the left panel
-    - Click **/lab** on the mid panel
-    - Click **Actions**, and select **Enable CORS**
-    - Click **Enable CORS and replace existing CORS headers**
-    - Click **Yes,replace existing values**
-
-- Run webapp server
+- Start the web app
 ```
 npm start
 ```
