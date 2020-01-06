@@ -87,7 +87,7 @@ python face-detection.py
 - Edit `App.js` in **webapp/src**
     - paste your **API Gateway endpoint** on it
 <img src="images/appjs.png" alt="architecture"
-width="70%" height="70%" />
+width="60%" height="60%" />
 
 - API Gateway endpoint
     - Go to API Gateway console
