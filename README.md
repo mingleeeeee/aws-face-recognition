@@ -89,10 +89,12 @@ python face-detection.py
 <img src="images/appjs.png" alt="architecture"
 width="70%" height="70%" />
 
-    - API Gateway endpoint
-        - Go to API Gateway console
-        - Click stages on the left panel
-        - select the resource method
+- API Gateway endpoint
+    - Go to API Gateway console
+    - Click stages on the left panel
+    - select the resource method
+    - copy the url
+    
 <img src="images/api-endpoint.png" alt="architecture"
 width="70%" height="70%" />
 
@@ -100,7 +102,7 @@ width="70%" height="70%" />
 ```
 npm install
 ```
-- Start the web app
+- Start the web server
 ```
 npm start
 ```
