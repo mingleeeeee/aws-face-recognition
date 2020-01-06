@@ -28,7 +28,7 @@ This workshop requires the following:
 - Recognition result
    
     <img src="images/iot-result.png" alt="architecture"
-	 width="50%" height="50%" />
+	 width="80%" height="80%" />
 
 
 ## Build a face recognition app
