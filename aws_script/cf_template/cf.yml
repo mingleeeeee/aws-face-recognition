@@ -122,6 +122,7 @@ Resources:
           - 'arn:aws:iam::aws:policy/AmazonDynamoDBFullAccess'
           - 'arn:aws:iam::aws:policy/AmazonRekognitionFullAccess'
           - 'arn:aws:iam::aws:policy/CloudWatchLogsFullAccess'
+          - 'arn:aws:iam::aws:policy/AWSIoTFullAccess'
         AssumeRolePolicyDocument:
           Version: '2012-10-17'
           Statement:
