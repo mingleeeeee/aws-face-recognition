@@ -13,8 +13,8 @@ This workshop requires the following:
     ``` 
     pip install -r requirement.txt 
     ```
-- npm
-- node.js
+- NodeJs & npm
+    - [Download from here](https://nodejs.org/)
 
 ## Overview
 - AWS architecture
@@ -86,7 +86,7 @@ python face-detection.py
     - src
 - Edit `App.js` in **webapp/src**
     - paste your **API Gateway endpoint** on it
-    
+
 <img src="images/appjs.png" alt="architecture"
 width="60%" height="60%" />
 
