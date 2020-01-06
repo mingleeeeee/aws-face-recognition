@@ -3,7 +3,7 @@ Transform: AWS::Serverless-2016-10-31
 Description: Set up lab
 
 Parameters:
-    # lambda script
+    # setup lambda script
     ScriptBucketName: 
       Type: String
       Description: Enter the bucket name for lambda script.
@@ -16,25 +16,21 @@ Parameters:
       Type: String
       Description: Enter the script for Read DB lambda.
       Default: lambda_script/ReadDB.zip
-    FirehoseStreamLambdaScript:
-      Type: String
-      Description: Enter the script for Read DB lambda.
-      Default: lambda_script/Firehose.zip
     # create S3 bucket
     FaceBucketName: 
       Type: String
       Description: Create a bucket with a unique name.
       AllowedPattern: ^[a-z0-9.-]+$
       ConstraintDescription: Malformed input-Parameter S3DataRepositoryBucketName must be unique and only contain lowercase letters and numbers
-    # create lambda
+    # create lambda function
     FaceRecognitionLambdaName:
       Type: String
       Description: Enter your lambda name here.
       Default: "Lab-FaceRecognition"
-    FirehoseStreamLambdaName:
+    RegionName:
       Type: String
-      Description: Enter your lambda name here.
-      Default: "Lab-FirehoseTransform"
+      Description: Enter your region name here.
+      Default: "us-east-1"
     ReadDBLambdaName:
       Type: String
       Description: Enter your lambda name here.
@@ -53,32 +49,11 @@ Parameters:
       Description: 'Enter the role name for lambda.'
       Type: String
       Default: Lab-FaceRecognition-role
-    FirehoseStreamRoleName:
-      Description: 'Enter the role for firehose delivery stream.'
-      Type: String
-      Default: Lab-firehose-role
-    IoTRuleRoleName:
-      Description: 'Enter the role for iot rule.'
-      Type: String
-      Default: Lab-iot-rule-firehose
-    GlueRoleName:
-      Description: 'Enter the role for glue.'
-      Type: String
-      Default: Lab-glue-role
-    ECSRoleName:
-      Description: 'Enter the role for ecs (AWS batch).'
-      Type: String
-      Default: Lab-ecs-batch-role
-    # create firehose stream
-    FirehoseStreamName:
-      Description: 'Enter the name for firehose stream.'
-      Type: String
-      Default: Lab-FirehoseStream
     # create iot rule
     IoTRuleName:
       Description: 'Enter the name for IoT rule.'
       Type: String
-      Default: LabSendFirehose
+      Default: LabSendLambda
     SQLcommand:
       Description: 'Enter SQL command for IoT rule. IoT rule will subscribe the following topic name.'
       Type: String
@@ -106,20 +81,12 @@ Metadata:
           default: "IAM Role Configuration"
         Parameters: 
           - FaceRecognitionRoleName
-          - FirehoseStreamRoleName
-          - IoTRuleRoleName
-          - GlueRoleName
-          - ECSRoleName
       - Label: 
           default: "Lambda Configuration - Face Recognition"
         Parameters: 
           - FaceRecognitionLambdaName
           - FaceRecognitionLambdaScript
-      - Label: 
-          default: "Lambda Configuration - FirehoseTransform"
-        Parameters: 
-          - FirehoseStreamLambdaName
-          - FirehoseStreamLambdaScript
+          - RegionName
       - Label: 
           default: "Lambda Configuration - ReadDB"
         Parameters: 
@@ -134,11 +101,6 @@ Metadata:
           default: "IoT Configuration"
         Parameters: 
           - IoTRuleName
-      - Label:
-          default: "Firehose Configuration"
-        Parameters: 
-          - FirehoseStreamName
-          - FirehoseStreamRoleName
       - Label:
           default: "Rekognition Configuration"
         Parameters: 
@@ -160,8 +122,6 @@ Resources:
           - 'arn:aws:iam::aws:policy/AmazonDynamoDBFullAccess'
           - 'arn:aws:iam::aws:policy/AmazonRekognitionFullAccess'
           - 'arn:aws:iam::aws:policy/CloudWatchLogsFullAccess'
-          - 'arn:aws:iam::aws:policy/AWSBatchFullAccess'
-          - 'arn:aws:iam::aws:policy/AmazonKinesisFirehoseFullAccess'
         AssumeRolePolicyDocument:
           Version: '2012-10-17'
           Statement:
@@ -173,81 +133,6 @@ Resources:
                 - "lambda.amazonaws.com"
         RoleName: !Ref FaceRecognitionRoleName
 
-    FirehoseStreamRole: 
-      Type: AWS::IAM::Role
-      Properties:
-        Path: "/"
-        ManagedPolicyArns: 
-          - 'arn:aws:iam::aws:policy/AmazonS3FullAccess'
-          - 'arn:aws:iam::aws:policy/CloudWatchLogsFullAccess'
-          - 'arn:aws:iam::aws:policy/AWSLambdaFullAccess'
-          - 'arn:aws:iam::aws:policy/AmazonKinesisFullAccess'
-        AssumeRolePolicyDocument:
-          Version: '2012-10-17'
-          Statement:
-          - 
-            Action: sts:AssumeRole  
-            Effect: Allow
-            Principal:
-              Service:
-                - "firehose.amazonaws.com"
-        RoleName: !Ref FirehoseStreamRoleName
-    
-    IoTRuleRole: 
-      Type: AWS::IAM::Role
-      Properties:
-        Path: "/"
-        ManagedPolicyArns: 
-          - 'arn:aws:iam::aws:policy/AmazonKinesisFirehoseFullAccess'
-        AssumeRolePolicyDocument:
-          Version: '2012-10-17'
-          Statement:
-          - 
-            Action: sts:AssumeRole  
-            Effect: Allow
-            Principal:
-              Service:
-                - "iot.amazonaws.com"
-        RoleName: !Ref IoTRuleRoleName
-
-    GlueRole: 
-      Type: AWS::IAM::Role
-      Properties:
-        Path: "/"
-        ManagedPolicyArns: 
-          - 'arn:aws:iam::aws:policy/AmazonRDSFullAccess'
-          - 'arn:aws:iam::aws:policy/AmazonS3FullAccess'
-          - 'arn:aws:iam::aws:policy/service-role/AWSGlueServiceRole'
-        AssumeRolePolicyDocument:
-          Version: '2012-10-17'
-          Statement:
-          - 
-            Action: sts:AssumeRole  
-            Effect: Allow
-            Principal:
-              Service:
-                - "glue.amazonaws.com"
-        RoleName: !Ref GlueRoleName
-
-    ECSRole: 
-      Type: AWS::IAM::Role
-      Properties:
-        Path: "/"
-        ManagedPolicyArns: 
-          - 'arn:aws:iam::aws:policy/AmazonS3FullAccess'
-          - 'arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryFullAccess'
-          - 'arn:aws:iam::aws:policy/AWSBatchFullAccess'
-        AssumeRolePolicyDocument:
-          Version: '2012-10-17'
-          Statement:
-          - 
-            Action: sts:AssumeRole  
-            Effect: Allow
-            Principal:
-              Service:
-                - "ecs-tasks.amazonaws.com"
-        RoleName: !Ref ECSRoleName
-      
     ## lambda
     FaceRecognitionLambda:
       Type: AWS::Lambda::Function
@@ -263,26 +148,11 @@ Resources:
         Timeout: 300 
         Environment:
           Variables:
+            REGION : !Ref RegionName
             BUCKET: !Ref FaceBucketName
             COLLECTION: !Ref RekognitionCollectionName
             FACE_TABLE: !Ref FaceIndexTableName
             STREAM_RECORD: !Ref FaceRecordTableName
-
-    FirehoseStreamLambda:
-      Type: AWS::Lambda::Function
-      Properties:
-        FunctionName: !Ref FirehoseStreamLambdaName
-        Code:
-          # Choose your script in a specific S3 bucket.
-          S3Bucket: !Ref ScriptBucketName
-          S3Key: !Ref FirehoseStreamLambdaScript
-        Handler: lambda_function.lambda_handler
-        Role: !GetAtt FaceRecognitionRole.Arn
-        Runtime: python3.7
-        Timeout: 300
-        Environment:
-          Variables:
-            BUCKET: !Ref FaceBucketName
 
     ReadDBLambda:
       Type: AWS::Lambda::Function
@@ -305,46 +175,19 @@ Resources:
       Type: AWS::S3::Bucket
       Properties:
         BucketName: !Ref FaceBucketName
-        NotificationConfiguration:
-          LambdaConfigurations:
-          - Event: 's3:ObjectCreated:Put'
-            Function: !GetAtt FaceRecognitionLambda.Arn
-    SetPermissionBucket1:
-      Type: AWS::Lambda::Permission
-      Properties:
-        Action: 'lambda:InvokeFunction'
-        FunctionName: !Ref FaceRecognitionLambda
-        Principal: s3.amazonaws.com
-        SourceAccount: !Ref "AWS::AccountId"
-        SourceArn: !Sub "arn:aws:s3:::${FaceBucketName}"
-    # firehose setup
-    FirehoseStream:
-      Type: AWS::KinesisFirehose::DeliveryStream
-      Properties: 
-        DeliveryStreamName: !Ref FirehoseStreamName
-        DeliveryStreamType: DirectPut
-        ExtendedS3DestinationConfiguration: 
-          BucketARN: !GetAtt FaceDataBucket.Arn
-          BufferingHints: 
-            IntervalInSeconds: 60
-            SizeInMBs: 3
-          # CloudWatchLoggingOptions: 
-          #   Enabled: True
-          #   LogGroupName: /aws/kinesisfirehose/lab
-          #   LogStreamName: S3Delivery
-          CompressionFormat:  UNCOMPRESSED
-          ProcessingConfiguration:
-            Enabled: True
-            Processors:
-              - Type: Lambda
-                Parameters:
-                  - ParameterName: LambdaArn
-                    ParameterValue: !GetAtt FirehoseStreamLambda.Arn
-                  # - ParameterName: BufferSizeInMBs
-                  #   ParameterValue: 3
-                  # - ParameterName: BufferIntervalInSeconds
-                  #   ParameterValue: 60
-          RoleARN: !GetAtt FirehoseStreamRole.Arn
+    #     NotificationConfiguration:
+    #       LambdaConfigurations:
+    #       - Event: 's3:ObjectCreated:Put'
+    #         Function: !GetAtt FaceRecognitionLambda.Arn
+    # SetPermissionBucket1:
+    #   Type: AWS::Lambda::Permission
+    #   Properties:
+    #     Action: 'lambda:InvokeFunction'
+    #     FunctionName: !Ref FaceRecognitionLambda
+    #     Principal: s3.amazonaws.com
+    #     SourceAccount: !Ref "AWS::AccountId"
+    #     SourceArn: !Sub "arn:aws:s3:::${FaceBucketName}"
+
     # iot rule setup
     IotRule:
       Type: AWS::IoT::TopicRule
@@ -354,9 +197,8 @@ Resources:
           Sql:  !Ref SQLcommand  # subscribe to topic 
           RuleDisabled: false
           Actions:
-            - Firehose: 
-                DeliveryStreamName: !Ref FirehoseStreamName
-                RoleArn: !GetAtt IoTRuleRole.Arn
+            - Lambda:
+               FunctionArn: !GetAtt FaceRecognitionLambda.Arn
 
     # DynamoDB
     FaceIndexTable:
@@ -377,10 +219,10 @@ Resources:
       Properties:
         TableName: !Ref FaceRecordTableName
         AttributeDefinitions:
-          - AttributeName: "id"
+          - AttributeName: "record_id"
             AttributeType: "S"
         KeySchema:
-          - AttributeName: "id"
+          - AttributeName: "record_id"
             KeyType: "HASH"
         ProvisionedThroughput:
           ReadCapacityUnits: 1
