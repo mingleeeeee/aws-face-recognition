@@ -94,9 +94,9 @@ width="70%" height="70%" />
     - Click stages on the left panel
     - select the resource method
     - copy the url
-    
+
 <img src="images/api-endpoint.png" alt="architecture"
-width="70%" height="70%" />
+width="100%" height="100%" />
 
 - Run npm install to load modules
 ```
