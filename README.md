@@ -22,11 +22,6 @@ This workshop requires the following:
 <img src="images/arch.png" alt="architecture"
 	 width="70%" height="70%" />
 
-- Face detection app
-
-    <img src="images/ming.png" alt="architecture"
-	 width="50%" height="50%" />
-
 - Recognition result on **AWS IoT**
    
     <img src="images/iot-result.png" alt="architecture"
@@ -68,6 +63,11 @@ aws configure
 cd script
 python face-detection.py
 ```
+
+- Adding the name to the face image
+    - Go to **DynamoDB**
+    - Select `lab_face_index` table in the left panel
+    - Here you can modify the name of each index record by checking wiht S3 link images
 
 - IoT Topic
     - Detected faces will be sent to `'face/image'`
